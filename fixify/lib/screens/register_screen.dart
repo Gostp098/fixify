@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../widgets/custom_textfield.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({Key? key}) : super(key: key);
+  const RegisterScreen({super.key});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -29,17 +32,64 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _handleSignUp() {
-    if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account created successfully! Please login.'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context); // Go back to login screen
+Future<void> _handleSignUp() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  try {
+    // 🔥 Create user in Firebase Auth
+    UserCredential userCredential =
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    String uid = userCredential.user!.uid;
+
+    // 🔥 Save extra data in Firestore
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'fullName': _fullNameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'phone': _phoneController.text.trim(),
+      'role': _selectedRole.toLowerCase(), // client / technician
+      'createdAt': Timestamp.now(),
+    });
+
+    // ✅ Success
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Account created successfully!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    Navigator.pop(context); // back to login
+
+  } on FirebaseAuthException catch (e) {
+    String message = "Registration failed";
+
+    if (e.code == 'email-already-in-use') {
+      message = "Email already exists";
+    } else if (e.code == 'weak-password') {
+      message = "Password is too weak";
     }
-  }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } catch (e, stackTrace) {
+  print('REGISTRATION ERROR: $e');
+  print('STACK: $stackTrace');
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text("Error: ${e.toString()}"),
+      backgroundColor: Colors.red,
+    ),
+  );
+}
+}
 
   @override
   Widget build(BuildContext context) {

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "531101671920",
+    "project_id": "fixify-2a88a",
+    "storage_bucket": "fixify-2a88a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:531101671920:android:1ba5073f65763b20313d35",
+        "android_client_info": {
+          "package_name": "com.example.fixify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASrxll6rjXryCV_GsTGm6OHPDTTpb1DD8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
