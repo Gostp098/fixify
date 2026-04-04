@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_textfield.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -14,6 +13,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
 
   @override
@@ -25,61 +25,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
 
     try {
-      // Sign in with Firebase Auth
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+      final role = await _authService.login(
+        _emailController.text,
+        _passwordController.text,
       );
-
-      String uid = userCredential.user!.uid;
-
-      // Get user role from Firestore
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
-
-      String role = userDoc['role'] ?? 'client';
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login successful!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      // Navigate based on role
       if (role == 'technician') {
-        Navigator.pushReplacementNamed(context, '/home_technician');
+        Navigator.pushReplacementNamed(context, '/home_pro');
       } else {
         Navigator.pushReplacementNamed(context, '/home_client');
       }
-
-    } on FirebaseAuthException catch (e) {
+    } on Exception catch (e) {
+      if (!mounted) return;
       String message = 'Login failed';
-      if (e.code == 'user-not-found') {
-        message = 'No account found with this email';
-      } else if (e.code == 'wrong-password') {
-        message = 'Incorrect password';
-      } else if (e.code == 'invalid-credential') {
+      final err = e.toString();
+      if (err.contains('user-not-found') || err.contains('invalid-credential')) {
         message = 'Invalid email or password';
-      } else if (e.code == 'too-many-requests') {
+      } else if (err.contains('wrong-password')) {
+        message = 'Incorrect password';
+      } else if (err.contains('too-many-requests')) {
         message = 'Too many attempts. Try again later';
       }
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.red),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -88,23 +61,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleForgotPassword() async {
     final email = _emailController.text.trim();
-
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Enter your email first, then tap Forgot Password'),
+          content: Text('Enter your email above first'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
-
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      await _authService.sendPasswordReset(email);
       if (!mounted) return;
       showDialog(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (_) => AlertDialog(
           title: const Text('Reset Password'),
           content: Text('Password reset link sent to $email'),
           actions: [
@@ -115,9 +86,9 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
       );
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Error'), backgroundColor: Colors.red),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -150,8 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
                 ),
-                const SizedBox(height: 30),
-
+                const SizedBox(height: 40),
                 CustomTextField(
                   controller: _emailController,
                   label: 'Email Address',
@@ -165,7 +135,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-
                 CustomTextField(
                   controller: _passwordController,
                   label: 'Password',
@@ -178,7 +147,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
                 const SizedBox(height: 8),
-
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -190,7 +158,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
@@ -201,14 +168,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
                       : const Text(
                           'Login',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                 ),
                 const SizedBox(height: 20),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

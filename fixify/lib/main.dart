@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';  // add this
-
-
+import 'views/client/home_client.dart';
+import 'views/pro/home_pro.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  
-
-  
   runApp(const FixifyApp());
 }
-
 
 class FixifyApp extends StatelessWidget {
   const FixifyApp({super.key});
@@ -45,16 +40,8 @@ class FixifyApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
-      },
-      // Add an error handler for unknown routes
-      onGenerateRoute: (settings) {
-        if (settings.name == '/login') {
-          return MaterialPageRoute(builder: (_) => const LoginScreen());
-        }
-        if (settings.name == '/register') {
-          return MaterialPageRoute(builder: (_) => const RegisterScreen());
-        }
-        return MaterialPageRoute(builder: (_) => const SplashScreen());
+        '/home_client': (context) => const HomeClient(),
+        '/home_pro': (context) => const HomePro(),
       },
     );
   }
