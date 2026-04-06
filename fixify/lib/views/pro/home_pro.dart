@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import 'complete_profile_screen.dart'; // added import
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomePro extends StatefulWidget {
   const HomePro({Key? key}) : super(key: key);
@@ -17,6 +20,7 @@ class _HomeProState extends State<HomePro> {
   void initState() {
     super.initState();
     _loadUser();
+    _checkProfileComplete(); // added profile completion check
   }
 
   Future<void> _loadUser() async {
@@ -25,6 +29,26 @@ class _HomeProState extends State<HomePro> {
       setState(() {
         _fullName = data['fullName'] ?? 'Technician';
       });
+    }
+  }
+
+  // added method to check if profile is complete
+  Future<void> _checkProfileComplete() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+
+    final isComplete = doc.data()?['profileComplete'] ?? false;
+
+    if (!isComplete && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const CompleteProfileScreen()),
+      );
     }
   }
 
@@ -318,7 +342,12 @@ class _HomeProState extends State<HomePro> {
             ),
           ),
           const SizedBox(height: 32),
-          _profileItem(Icons.person_outline, 'Complete Profile'),
+          _profileItem(Icons.person_outline, 'Complete Profile', onTap: () { // added onTap
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CompleteProfileScreen()),
+            );
+          }),
           _profileItem(Icons.build_outlined, 'My Services'),
           _profileItem(Icons.star_outline, 'Reviews'),
           _profileItem(Icons.notifications_outlined, 'Notifications'),
@@ -342,13 +371,14 @@ class _HomeProState extends State<HomePro> {
     );
   }
 
-  Widget _profileItem(IconData icon, String label) {
+  // updated _profileItem to accept optional onTap
+  Widget _profileItem(IconData icon, String label, {VoidCallback? onTap}) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon, color: const Color(0xFFF97316)),
       title: Text(label),
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-      onTap: () {},
+      onTap: onTap ?? () {},
     );
   }
 }

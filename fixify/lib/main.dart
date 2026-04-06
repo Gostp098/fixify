@@ -5,6 +5,7 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'views/client/home_client.dart';
 import 'views/pro/home_pro.dart';
+import 'views/pro/complete_profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +43,8 @@ class FixifyApp extends StatelessWidget {
         '/register': (context) => const RegisterScreen(),
         '/home_client': (context) => const HomeClient(),
         '/home_pro': (context) => const HomePro(),
+        '/complete_profile': (context) => const CompleteProfileScreen(),
+
       },
     );
   }
