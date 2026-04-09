@@ -168,7 +168,7 @@ class _HomeClientState extends State<HomeClient> {
             itemBuilder: (context, index) {
               final cat = _categories[index];
               return GestureDetector(
-                onTap: () {},
+                onTap: () => Navigator.pushNamed(context, '/service_request'), // ✅ changed here
                 child: Container(
                   decoration: BoxDecoration(
                     color: cat['color'],

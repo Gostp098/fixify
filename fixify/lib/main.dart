@@ -13,6 +13,8 @@ import 'views/client/client_profile_screen.dart';
 import 'views/pro/home_pro.dart';
 import 'views/pro/complete_profile_screen.dart';
 import 'providers/client_profile_provider.dart';
+import 'views/client/service_request_screen.dart';
+import 'providers/service_request_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +31,8 @@ class FixifyApp extends StatelessWidget {
       providers: [
         // Register all providers here as the app grows
         ChangeNotifierProvider(create: (_) => ClientProfileProvider()),
+        ChangeNotifierProvider(create: (_) => ServiceRequestProvider()),
+
       ],
       child: MaterialApp(
         title: 'Fixify',
@@ -57,6 +61,8 @@ class FixifyApp extends StatelessWidget {
           '/home_pro': (context) => const HomePro(),
           '/client_profile': (context) => const ClientProfileScreen(),
           '/complete_profile': (context) => const CompleteProfileScreen(),
+          '/service_request': (context) => const ServiceRequestScreen(),
+
         },
       ),
     );
