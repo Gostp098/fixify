@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../client/client_profile_screen.dart';
 
 class HomeClient extends StatefulWidget {
   const HomeClient({Key? key}) : super(key: key);
@@ -14,12 +17,12 @@ class _HomeClientState extends State<HomeClient> {
   String _fullName = '';
 
   final List<Map<String, dynamic>> _categories = [
-    {'icon': Icons.electrical_services, 'label': 'Electrician', 'color': Color(0xFFFFF3CD)},
-    {'icon': Icons.plumbing, 'label': 'Plumber', 'color': Color(0xFFD1ECF1)},
-    {'icon': Icons.ac_unit, 'label': 'AC Repair', 'color': Color(0xFFCCE5FF)},
-    {'icon': Icons.format_paint, 'label': 'Painter', 'color': Color(0xFFD4EDDA)},
-    {'icon': Icons.carpenter, 'label': 'Carpenter', 'color': Color(0xFFFDE2D8)},
-    {'icon': Icons.cleaning_services, 'label': 'Cleaning', 'color': Color(0xFFE2D9F3)},
+    {'icon': Icons.electrical_services, 'label': 'Electrician', 'color': const Color(0xFFFFF3CD)},
+    {'icon': Icons.plumbing, 'label': 'Plumber', 'color': const Color(0xFFD1ECF1)},
+    {'icon': Icons.ac_unit, 'label': 'AC Repair', 'color': const Color(0xFFCCE5FF)},
+    {'icon': Icons.format_paint, 'label': 'Painter', 'color': const Color(0xFFD4EDDA)},
+    {'icon': Icons.carpenter, 'label': 'Carpenter', 'color': const Color(0xFFFDE2D8)},
+    {'icon': Icons.cleaning_services, 'label': 'Cleaning', 'color': const Color(0xFFE2D9F3)},
   ];
 
   @override
@@ -34,6 +37,29 @@ class _HomeClientState extends State<HomeClient> {
       setState(() {
         _fullName = data['fullName'] ?? 'Client';
       });
+      // After loading user data, check if profile is complete
+      await _checkProfileComplete();
+    }
+  }
+
+  /// If the user hasn't completed their profile, redirect to the profile form.
+  Future<void> _checkProfileComplete() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+
+    final isComplete = doc.data()?['profileComplete'] ?? false;
+
+    if (!isComplete && mounted) {
+      // Redirect to profile completion screen
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ClientProfileScreen()),
+      );
     }
   }
 
@@ -237,7 +263,13 @@ class _HomeClientState extends State<HomeClient> {
             ),
           ),
           const SizedBox(height: 32),
-          _profileItem(Icons.person_outline, 'Edit Profile'),
+          // Edit Profile now navigates to the profile screen
+          _profileItem(Icons.person_outline, 'Edit Profile', onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ClientProfileScreen()),
+            );
+          }),
           _profileItem(Icons.history, 'Booking History'),
           _profileItem(Icons.notifications_outlined, 'Notifications'),
           _profileItem(Icons.help_outline, 'Help & Support'),
@@ -260,13 +292,14 @@ class _HomeClientState extends State<HomeClient> {
     );
   }
 
-  Widget _profileItem(IconData icon, String label) {
+  // Updated _profileItem to accept an optional onTap callback
+  Widget _profileItem(IconData icon, String label, {VoidCallback? onTap}) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon, color: const Color(0xFF2E5BFF)),
       title: Text(label),
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-      onTap: () {},
+      onTap: onTap ?? () {},
     );
   }
 }
