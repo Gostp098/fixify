@@ -1,29 +1,28 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/client_profile_model.dart';
+import '../models/technician_profile_model.dart';
 
 enum ProfileSaveState { idle, loading, success, error }
 
-class ClientProfileProvider extends ChangeNotifier {
+class TechnicianProfileProvider extends ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  ClientProfile? _profile;
+  TechnicianProfile? _profile;
   ProfileSaveState _saveState = ProfileSaveState.idle;
   String _errorMessage = '';
   bool _isLoadingProfile = false;
 
   // ── Getters ──────────────────────────────────────────────
-  ClientProfile? get profile => _profile;
+  TechnicianProfile? get profile => _profile;
   ProfileSaveState get saveState => _saveState;
   String get errorMessage => _errorMessage;
   bool get isLoadingProfile => _isLoadingProfile;
   bool get isSaving => _saveState == ProfileSaveState.loading;
   String? get uid => _auth.currentUser?.uid;
 
-  // ── Load existing profile from Firestore ─────────────────
+  // ── Load existing profile ─────────────────────────────────
   Future<void> loadProfile() async {
     if (uid == null) return;
     _isLoadingProfile = true;
@@ -31,15 +30,14 @@ class ClientProfileProvider extends ChangeNotifier {
 
     try {
       final doc = await _db
-          .collection('client_profiles')
+          .collection('technician_profiles')
           .doc(uid)
           .get();
 
       if (doc.exists && doc.data() != null) {
-        _profile = ClientProfile.fromMap(uid!, doc.data()!);
+        _profile = TechnicianProfile.fromMap(uid!, doc.data()!);
       }
-    } catch (e) {
-      // Profile doesn't exist yet — that's fine
+    } catch (_) {
       _profile = null;
     } finally {
       _isLoadingProfile = false;
@@ -47,14 +45,16 @@ class ClientProfileProvider extends ChangeNotifier {
     }
   }
 
-  // ── Save profile to Firestore ─────────────────────────────
+  // ── Save / update profile ─────────────────────────────────
   Future<void> saveProfile({
-    required String address,
-    required String city,
-    required Gender gender,
-    required ContactMethod preferredContact,
-    String? alternativePhone,
+    required String headline,
+    required String trade,
+    required double hourlyRate,
+    required int yearsOfExperience,
+    required int serviceRadius,
+    required String bio,
     String? photoUrl,
+    String? licenseUrl,
   }) async {
     if (uid == null) {
       _setError('Not authenticated');
@@ -66,32 +66,34 @@ class ClientProfileProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final updatedProfile = ClientProfile(
+      final updated = TechnicianProfile(
         uid: uid!,
-        address: address.trim(),
-        city: city.trim(),
-        gender: gender,
-        preferredContact: preferredContact,
-        alternativePhone: alternativePhone?.trim().isEmpty == true
-            ? null
-            : alternativePhone?.trim(),
+        headline: headline.trim(),
+        trade: trade,
+        hourlyRate: hourlyRate,
+        yearsOfExperience: yearsOfExperience,
+        serviceRadius: serviceRadius,
+        bio: bio.trim(),
         photoUrl: photoUrl ?? _profile?.photoUrl,
+        licenseUrl: licenseUrl ?? _profile?.licenseUrl,
+        isOnline: _profile?.isOnline ?? false,
         profileComplete: true,
+        rating: _profile?.rating ?? 0.0,
+        totalReviews: _profile?.totalReviews ?? 0,
       );
 
-      // Save to client_profiles collection
       await _db
-          .collection('client_profiles')
+          .collection('technician_profiles')
           .doc(uid)
-          .set(updatedProfile.toMap(), SetOptions(merge: true));
+          .set(updated.toMap(), SetOptions(merge: true));
 
-      // Mark profile complete on main user doc
+      // Mark profileComplete on the users doc
       await _db
           .collection('users')
           .doc(uid)
           .update({'profileComplete': true});
 
-      _profile = updatedProfile;
+      _profile = updated;
       _saveState = ProfileSaveState.success;
     } catch (e) {
       _setError('Failed to save profile: ${e.toString()}');
@@ -100,16 +102,30 @@ class ClientProfileProvider extends ChangeNotifier {
     }
   }
 
-  // ── Reset state after navigation ─────────────────────────
+  // ── Toggle online / offline ───────────────────────────────
+  Future<void> toggleOnline(bool value) async {
+    if (uid == null) return;
+    try {
+      await _db
+          .collection('technician_profiles')
+          .doc(uid)
+          .update({'isOnline': value});
+      if (_profile != null) {
+        _profile = _profile!.copyWith(isOnline: value);
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  // ── Reset state after navigation ──────────────────────────
   void resetSaveState() {
     _saveState = ProfileSaveState.idle;
     _errorMessage = '';
     notifyListeners();
   }
 
-  // ── Private helpers ───────────────────────────────────────
-  void _setError(String message) {
-    _errorMessage = message;
+  void _setError(String msg) {
+    _errorMessage = msg;
     _saveState = ProfileSaveState.error;
     notifyListeners();
   }

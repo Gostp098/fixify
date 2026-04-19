@@ -1,5 +1,3 @@
-// lib/views/client/service_request_screen.dart
-// VIEW ONLY — zero Firebase imports, zero business logic
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

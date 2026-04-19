@@ -1,7 +1,3 @@
-// ============================================================
-// MODEL — lib/models/client_profile.dart
-// Pure data class, no Flutter, no Firebase
-// ============================================================
 
 enum Gender { male, female, preferNotToSay }
 

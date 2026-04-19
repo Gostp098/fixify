@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../client/client_profile_screen.dart';
+import 'my_bookings_screen.dart';
+import '../../providers/auth_provider.dart' as app;
+import 'client_profile_screen.dart';
 
 class HomeClient extends StatefulWidget {
   const HomeClient({Key? key}) : super(key: key);
@@ -15,14 +16,17 @@ class _HomeClientState extends State<HomeClient> {
   final AuthService _authService = AuthService();
   int _currentIndex = 0;
   String _fullName = '';
+  bool _isLoadingUser = true;
+
+  static const _primaryBlue = Color(0xFF2E5BFF);
 
   final List<Map<String, dynamic>> _categories = [
     {'icon': Icons.electrical_services, 'label': 'Electrician', 'color': const Color(0xFFFFF3CD)},
-    {'icon': Icons.plumbing, 'label': 'Plumber', 'color': const Color(0xFFD1ECF1)},
-    {'icon': Icons.ac_unit, 'label': 'AC Repair', 'color': const Color(0xFFCCE5FF)},
-    {'icon': Icons.format_paint, 'label': 'Painter', 'color': const Color(0xFFD4EDDA)},
-    {'icon': Icons.carpenter, 'label': 'Carpenter', 'color': const Color(0xFFFDE2D8)},
-    {'icon': Icons.cleaning_services, 'label': 'Cleaning', 'color': const Color(0xFFE2D9F3)},
+    {'icon': Icons.plumbing,            'label': 'Plumber',     'color': const Color(0xFFD1ECF1)},
+    {'icon': Icons.ac_unit,             'label': 'AC Repair',   'color': const Color(0xFFCCE5FF)},
+    {'icon': Icons.format_paint,        'label': 'Painter',     'color': const Color(0xFFD4EDDA)},
+    {'icon': Icons.carpenter,           'label': 'Carpenter',   'color': const Color(0xFFFDE2D8)},
+    {'icon': Icons.cleaning_services,   'label': 'Cleaning',    'color': const Color(0xFFE2D9F3)},
   ];
 
   @override
@@ -33,44 +37,40 @@ class _HomeClientState extends State<HomeClient> {
 
   Future<void> _loadUser() async {
     final data = await _authService.getUserData();
-    if (mounted) {
-      setState(() {
-        _fullName = data['fullName'] ?? 'Client';
-      });
-      // After loading user data, check if profile is complete
-      await _checkProfileComplete();
-    }
-  }
+    if (!mounted) return;
 
-  /// If the user hasn't completed their profile, redirect to the profile form.
-  Future<void> _checkProfileComplete() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    final isComplete = data['profileComplete'] as bool? ?? false;
 
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .get();
-
-    final isComplete = doc.data()?['profileComplete'] ?? false;
-
-    if (!isComplete && mounted) {
-      // Redirect to profile completion screen
+    if (!isComplete) {
+      // Profile not complete — redirect immediately, no flash of home screen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ClientProfileScreen()),
       );
+      return;
     }
+
+    setState(() {
+      _fullName = data['fullName'] as String? ?? 'Client';
+      _isLoadingUser = false;
+    });
   }
 
   Future<void> _logout() async {
-    await _authService.logout();
+    await context.read<app.AuthProvider>().logout();
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingUser) {
+      return const Scaffold(
+        body: Center(
+            child: CircularProgressIndicator(color: _primaryBlue)),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -95,7 +95,8 @@ class _HomeClientState extends State<HomeClient> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Color(0xFF2E5BFF)),
+            icon: const Icon(Icons.notifications_outlined,
+                color: _primaryBlue),
             onPressed: () {},
           ),
           IconButton(
@@ -115,16 +116,22 @@ class _HomeClientState extends State<HomeClient> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),
-        selectedItemColor: const Color(0xFF2E5BFF),
+        selectedItemColor: _primaryBlue,
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined), label: 'Bookings'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined), label: 'Home'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today_outlined),
+              label: 'Bookings'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline), label: 'Profile'),
         ],
       ),
     );
   }
+
+  // ── Home tab ──────────────────────────────────────────────
 
   Widget _buildHomeTab() {
     return SingleChildScrollView(
@@ -137,28 +144,35 @@ class _HomeClientState extends State<HomeClient> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 6)
+              ],
             ),
-            child: TextField(
+            child: const TextField(
               decoration: InputDecoration(
                 hintText: 'Search for a service...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                prefixIcon: Icon(Icons.search, color: Colors.grey),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                contentPadding: EdgeInsets.symmetric(vertical: 14),
               ),
             ),
           ),
           const SizedBox(height: 28),
+
           // Categories
           const Text(
             'Categories',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E)),
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A2E)),
           ),
           const SizedBox(height: 14),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
@@ -168,19 +182,21 @@ class _HomeClientState extends State<HomeClient> {
             itemBuilder: (context, index) {
               final cat = _categories[index];
               return GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/service_request'), // ✅ changed here
+                onTap: () =>
+                    Navigator.pushNamed(context, '/service_request'),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: cat['color'],
+                    color: cat['color'] as Color,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(cat['icon'], size: 32, color: const Color(0xFF2E5BFF)),
+                      Icon(cat['icon'] as IconData,
+                          size: 32, color: _primaryBlue),
                       const SizedBox(height: 8),
                       Text(
-                        cat['label'],
+                        cat['label'] as String,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -194,17 +210,22 @@ class _HomeClientState extends State<HomeClient> {
             },
           ),
           const SizedBox(height: 28),
-          // Recent bookings section
+
+          // Recent bookings
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
                 'Recent Bookings',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E)),
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A2E)),
               ),
               TextButton(
                 onPressed: () => setState(() => _currentIndex = 1),
-                child: const Text('See all', style: TextStyle(color: Color(0xFF2E5BFF))),
+                child: const Text('See all',
+                    style: TextStyle(color: _primaryBlue)),
               ),
             ],
           ),
@@ -214,10 +235,13 @@ class _HomeClientState extends State<HomeClient> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 6)
+              ],
             ),
             child: const Center(
-              child: Text('No bookings yet', style: TextStyle(color: Colors.grey)),
+              child: Text('No bookings yet',
+                  style: TextStyle(color: Colors.grey)),
             ),
           ),
         ],
@@ -225,15 +249,11 @@ class _HomeClientState extends State<HomeClient> {
     );
   }
 
-  Widget _buildBookingsTab() {
-    return const Center(
-      child: Text(
-        'My Bookings\n(Coming soon)',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 18, color: Colors.grey),
-      ),
-    );
-  }
+  // ── Bookings tab ──────────────────────────────────────────
+
+  Widget _buildBookingsTab() => const MyBookingsScreen();
+
+  // ── Profile tab ───────────────────────────────────────────
 
   Widget _buildProfileTab() {
     return Padding(
@@ -244,13 +264,13 @@ class _HomeClientState extends State<HomeClient> {
           Center(
             child: CircleAvatar(
               radius: 44,
-              backgroundColor: const Color(0xFF2E5BFF).withOpacity(0.1),
+              backgroundColor: _primaryBlue.withOpacity(0.1),
               child: Text(
                 _fullName.isNotEmpty ? _fullName[0].toUpperCase() : 'C',
                 style: const TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF2E5BFF),
+                  color: _primaryBlue,
                 ),
               ),
             ),
@@ -259,15 +279,16 @@ class _HomeClientState extends State<HomeClient> {
           Center(
             child: Text(
               _fullName,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 32),
-          // Edit Profile now navigates to the profile screen
           _profileItem(Icons.person_outline, 'Edit Profile', onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ClientProfileScreen()),
+              MaterialPageRoute(
+                  builder: (_) => const ClientProfileScreen()),
             );
           }),
           _profileItem(Icons.history, 'Booking History'),
@@ -279,11 +300,13 @@ class _HomeClientState extends State<HomeClient> {
             child: OutlinedButton.icon(
               onPressed: _logout,
               icon: const Icon(Icons.logout, color: Colors.red),
-              label: const Text('Logout', style: TextStyle(color: Colors.red)),
+              label: const Text('Logout',
+                  style: TextStyle(color: Colors.red)),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Colors.red),
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
@@ -292,11 +315,11 @@ class _HomeClientState extends State<HomeClient> {
     );
   }
 
-  // Updated _profileItem to accept an optional onTap callback
-  Widget _profileItem(IconData icon, String label, {VoidCallback? onTap}) {
+  Widget _profileItem(IconData icon, String label,
+      {VoidCallback? onTap}) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: const Color(0xFF2E5BFF)),
+      leading: Icon(icon, color: _primaryBlue),
       title: Text(label),
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
       onTap: onTap ?? () {},
