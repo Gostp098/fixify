@@ -9,10 +9,10 @@ import 'screens/register_screen.dart';
 import 'views/client/home_client.dart';
 import 'views/client/client_profile_screen.dart';
 import 'views/client/service_request_screen.dart';
+import 'views/client/my_bookings_page.dart';          // ← was my_bookings_screen.dart
+import 'views/client/booking_detail_screen.dart';
 import 'views/pro/home_pro.dart';
 import 'views/pro/complete_profile_screen.dart';
-import 'views/client/my_bookings_screen.dart';
-import 'views/client/booking_detail_screen.dart';
 import 'views/pro/incoming_jobs_screen.dart';
 import 'views/pro/my_jobs_screen.dart';
 import 'views/pro/job_detail_screen.dart';
@@ -22,6 +22,7 @@ import 'providers/client_profile_provider.dart';
 import 'providers/technician_profile_provider.dart';
 import 'providers/service_request_provider.dart';
 import 'providers/booking_provider.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,17 +63,17 @@ class FixifyApp extends StatelessWidget {
         ),
         initialRoute: '/',
         routes: {
-          '/':                (context) => const SplashScreen(),
-          '/login':           (context) => const LoginScreen(),
-          '/register':        (context) => const RegisterScreen(),
-          '/home_client':     (context) => const HomeClient(),
-          '/home_pro':        (context) => const HomePro(),
-          '/client_profile':  (context) => const ClientProfileScreen(),
-          '/complete_profile':(context) => const CompleteProfileScreen(),
-          '/service_request': (context) => const ServiceRequestScreen(),
-          '/my_bookings':     (context) => const MyBookingsScreen(),
-          '/incoming_jobs':   (context) => const IncomingJobsScreen(),
-          '/my_jobs':         (context) => const MyJobsScreen(),
+          '/':                 (context) => const SplashScreen(),
+          '/login':            (context) => const LoginScreen(),
+          '/register':         (context) => const RegisterScreen(),
+          '/home_client':      (context) => const HomeClient(),
+          '/home_pro':         (context) => const HomePro(),
+          '/client_profile':   (context) => const ClientProfileScreen(),
+          '/complete_profile': (context) => const CompleteProfileScreen(),
+          '/service_request':  (context) => const ServiceRequestScreen(),
+          '/my_bookings':      (context) => const MyBookingsPage(),  // ← was MyBookingsScreen
+          '/incoming_jobs':    (context) => const IncomingJobsScreen(),
+          '/my_jobs':          (context) => const MyJobsScreen(),
         },
       ),
     );

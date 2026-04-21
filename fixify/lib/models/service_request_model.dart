@@ -1,3 +1,5 @@
+// lib/models/service_request_model.dart
+
 enum ServiceCategory {
   plumbing,
   electrical,
@@ -10,10 +12,38 @@ enum ServiceCategory {
   other,
 }
 
+// Extension so the view can call category.label cleanly
+extension ServiceCategoryX on ServiceCategory {
+  String get label {
+    switch (this) {
+      case ServiceCategory.plumbing:        return 'Plumbing';
+      case ServiceCategory.electrical:      return 'Electrical';
+      case ServiceCategory.cleaning:        return 'Cleaning';
+      case ServiceCategory.acRepair:        return 'AC Repair';
+      case ServiceCategory.painting:        return 'Painting';
+      case ServiceCategory.carpentry:       return 'Carpentry';
+      case ServiceCategory.welding:         return 'Welding';
+      case ServiceCategory.applianceRepair: return 'Appliance Repair';
+      case ServiceCategory.other:           return 'Other';
+    }
+  }
+}
+
 enum TimeSlot {
   morning,   // 08:00 – 12:00
   afternoon, // 12:00 – 17:00
   evening,   // 17:00 – 21:00
+}
+
+// Extension so the view can call timeSlot.label cleanly
+extension TimeSlotX on TimeSlot {
+  String get label {
+    switch (this) {
+      case TimeSlot.morning:   return 'Morning (08:00 – 12:00)';
+      case TimeSlot.afternoon: return 'Afternoon (12:00 – 17:00)';
+      case TimeSlot.evening:   return 'Evening (17:00 – 21:00)';
+    }
+  }
 }
 
 enum UrgencyLevel { normal, urgent }
@@ -108,30 +138,10 @@ class ServiceRequest {
     };
   }
 
-  String get categoryLabel {
-    switch (category) {
-      case ServiceCategory.plumbing:        return 'Plumbing';
-      case ServiceCategory.electrical:      return 'Electrical';
-      case ServiceCategory.cleaning:        return 'Cleaning';
-      case ServiceCategory.acRepair:        return 'AC Repair';
-      case ServiceCategory.painting:        return 'Painting';
-      case ServiceCategory.carpentry:       return 'Carpentry';
-      case ServiceCategory.welding:         return 'Welding';
-      case ServiceCategory.applianceRepair: return 'Appliance Repair';
-      case ServiceCategory.other:           return 'Other';
-    }
-  }
-
-  String get timeSlotLabel {
-    switch (timeSlot) {
-      case TimeSlot.morning:   return 'Morning (08:00 – 12:00)';
-      case TimeSlot.afternoon: return 'Afternoon (12:00 – 17:00)';
-      case TimeSlot.evening:   return 'Evening (17:00 – 21:00)';
-    }
-  }
-
-  String get urgencyLabel =>
-      urgency == UrgencyLevel.urgent ? 'Urgent' : 'Normal';
+  // ── Convenience getters (kept for backward compat with existing views) ──────
+  String get categoryLabel   => category.label;
+  String get timeSlotLabel   => timeSlot.label;
+  String get urgencyLabel    => urgency == UrgencyLevel.urgent ? 'Urgent' : 'Normal';
 
   String get statusLabel {
     switch (status) {
@@ -144,7 +154,7 @@ class ServiceRequest {
   }
 
   String get formattedDate =>
-      '${preferredDate.day.toString().padLeft(2,'0')}/'
-      '${preferredDate.month.toString().padLeft(2,'0')}/'
+      '${preferredDate.day.toString().padLeft(2, '0')}/'
+      '${preferredDate.month.toString().padLeft(2, '0')}/'
       '${preferredDate.year}';
 }

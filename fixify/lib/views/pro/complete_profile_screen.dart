@@ -203,7 +203,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   const SizedBox(height: 8),
                   _buildTradeDropdown(),
                   const SizedBox(height: 20),
-
                   // Hourly Rate
                   _sectionLabel('Hourly Rate (DT) *'),
                   const SizedBox(height: 8),

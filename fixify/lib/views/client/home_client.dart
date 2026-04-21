@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
-import 'my_bookings_screen.dart';
+import 'my_bookings_page.dart';
 import '../../providers/auth_provider.dart' as app;
 import 'client_profile_screen.dart';
 
@@ -251,7 +251,7 @@ class _HomeClientState extends State<HomeClient> {
 
   // ── Bookings tab ──────────────────────────────────────────
 
-  Widget _buildBookingsTab() => const MyBookingsScreen();
+  Widget _buildBookingsTab() => const MyBookingsPage();
 
   // ── Profile tab ───────────────────────────────────────────
 
