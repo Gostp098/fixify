@@ -4,12 +4,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/review_provider.dart';
 import '../../models/service_request_model.dart';
+import 'reviews_tab.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Status grouping
 // ─────────────────────────────────────────────────────────────────────────────
-// Line ~14-17: change const → final
+
 final _activeStatuses = {
   RequestStatus.pending,
   RequestStatus.accepted,
@@ -260,12 +262,21 @@ class BookingCard extends StatelessWidget {
                   const _UrgencyPill(),
                 ],
 
-                // Action buttons — only for active bookings
+                // Action buttons — active bookings
                 if (isActive) ...[
                   const SizedBox(height: 14),
                   const Divider(height: 1, color: Color(0xFFF0F0F0)),
                   const SizedBox(height: 12),
                   _ActionRow(booking: booking),
+                ],
+
+                // Rate button — completed bookings only
+                if (booking.status == RequestStatus.completed &&
+                    booking.technicianId != null) ...[
+                  const SizedBox(height: 14),
+                  const Divider(height: 1, color: Color(0xFFF0F0F0)),
+                  const SizedBox(height: 12),
+                  _RateRow(booking: booking),
                 ],
               ],
             ),
@@ -473,6 +484,239 @@ class _UrgencyPill extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFFDC2626))),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rate Row — shown on completed bookings
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _RateRow extends StatelessWidget {
+  final ServiceRequest booking;
+  const _RateRow({required this.booking});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ReviewProvider>(
+      builder: (context, reviewProvider, _) {
+        // Check if already reviewed
+        final alreadyReviewed = reviewProvider.myReviews
+            .any((r) => r.requestId == booking.id);
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (alreadyReviewed)
+              Row(
+                children: const [
+                  Icon(Icons.check_circle_outline,
+                      size: 16, color: Color(0xFF10B981)),
+                  SizedBox(width: 6),
+                  Text('Reviewed',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF10B981),
+                          fontWeight: FontWeight.w500)),
+                ],
+              )
+            else
+              _ActionButton(
+                label: '⭐ Rate',
+                textColor: const Color(0xFF2563EB),
+                borderColor: const Color(0xFFBFDBFE),
+                onPressed: () => _openRatingSheet(context),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _openRatingSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _RatingSheet(booking: booking),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rating bottom sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _RatingSheet extends StatefulWidget {
+  final ServiceRequest booking;
+  const _RatingSheet({required this.booking});
+
+  @override
+  State<_RatingSheet> createState() => _RatingSheetState();
+}
+
+class _RatingSheetState extends State<_RatingSheet> {
+  int _rating = 0;
+  final _commentController = TextEditingController();
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + bottom),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0E0E0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Title
+          Text(
+            'Rate ${widget.booking.category.label}',
+            style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                color: Color(0xFF1A1A1A)),
+          ),
+          Text(
+            widget.booking.formattedDate,
+            style:
+                const TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
+          ),
+          const SizedBox(height: 24),
+
+          // Star picker
+          const Text('Rating',
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Color(0xFF424242))),
+          const SizedBox(height: 10),
+          Row(
+            children: List.generate(
+              5,
+              (i) => GestureDetector(
+                onTap: () => setState(() => _rating = i + 1),
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Icon(
+                    i < _rating
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    size: 36,
+                    color: i < _rating
+                        ? const Color(0xFFFBBF24)
+                        : const Color(0xFFD1D5DB),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Comment
+          const Text('Comment',
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Color(0xFF424242))),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _commentController,
+            maxLines: 3,
+            maxLength: 300,
+            decoration: InputDecoration(
+              hintText: 'Share your experience...',
+              hintStyle: const TextStyle(
+                  color: Color(0xFFBDBDBD), fontSize: 14),
+              filled: true,
+              fillColor: const Color(0xFFF7F7F8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.all(14),
+              counterStyle: const TextStyle(
+                  fontSize: 11, color: Color(0xFF9E9E9E)),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Submit button
+          Consumer<ReviewProvider>(
+            builder: (context, provider, _) {
+              if (provider.submitState == ReviewSubmitState.success) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    Navigator.pop(context);
+                    provider.resetSubmitState();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Review submitted!'),
+                        backgroundColor: Color(0xFF10B981),
+                      ),
+                    );
+                  }
+                });
+              }
+
+              return SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: FilledButton(
+                  onPressed: _rating == 0 || provider.isSubmitting
+                      ? null
+                      : () => provider.submitReview(
+                            technicianId: widget.booking.technicianId!,
+                            requestId: widget.booking.id!,
+                            rating: _rating,
+                            comment: _commentController.text,
+                          ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    disabledBackgroundColor: const Color(0xFFBFDBFE),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    textStyle: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                  child: provider.isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Submit Review'),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

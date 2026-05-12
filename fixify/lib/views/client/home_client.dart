@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import 'my_bookings_page.dart';
+import 'reviews_tab.dart';                          // ← new
 import '../../providers/auth_provider.dart' as app;
 import 'client_profile_screen.dart';
 
@@ -42,7 +43,6 @@ class _HomeClientState extends State<HomeClient> {
     final isComplete = data['profileComplete'] as bool? ?? false;
 
     if (!isComplete) {
-      // Profile not complete — redirect immediately, no flash of home screen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ClientProfileScreen()),
@@ -284,6 +284,7 @@ class _HomeClientState extends State<HomeClient> {
             ),
           ),
           const SizedBox(height: 32),
+
           _profileItem(Icons.person_outline, 'Edit Profile', onTap: () {
             Navigator.push(
               context,
@@ -291,10 +292,44 @@ class _HomeClientState extends State<HomeClient> {
                   builder: (_) => const ClientProfileScreen()),
             );
           }),
-          _profileItem(Icons.history, 'Booking History'),
-          _profileItem(Icons.notifications_outlined, 'Notifications'),
+
+          // ← wired: goes to MyBookingsPage
+          _profileItem(Icons.history, 'Booking History', onTap: () {
+            setState(() => _currentIndex = 1);
+          }),
+
+          // ← new: opens ReviewsTab as a full screen
+          _profileItem(Icons.star_outline, 'My Reviews', onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  backgroundColor: const Color(0xFFF7F7F8),
+                  appBar: AppBar(
+                    backgroundColor: Colors.white,
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 0,
+                    iconTheme:
+                        const IconThemeData(color: Color(0xFF1A1A2E)),
+                    title: const Text(
+                      'My Reviews',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                          color: Color(0xFF1A1A2E)),
+                    ),
+                  ),
+                  body: const ReviewsTab(),
+                ),
+              ),
+            );
+          }),
+
+          _profileItem(
+              Icons.notifications_outlined, 'Notifications'),
           _profileItem(Icons.help_outline, 'Help & Support'),
           const SizedBox(height: 16),
+
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(

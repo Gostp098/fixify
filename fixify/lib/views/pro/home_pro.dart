@@ -6,6 +6,8 @@ import '../../providers/technician_profile_provider.dart';
 import 'complete_profile_screen.dart';
 import 'incoming_jobs_screen.dart';
 import 'my_jobs_screen.dart';
+import 'technician_reviews_screen.dart';
+
 
 class HomePro extends StatefulWidget {
   const HomePro({Key? key}) : super(key: key);
@@ -334,8 +336,14 @@ class _HomeProState extends State<HomePro> {
             );
           }),
           _profileItem(Icons.build_outlined, 'My Services'),
-          _profileItem(Icons.star_outline, 'Reviews'),
-          _profileItem(
+          _profileItem(Icons.star_outline, 'Reviews', onTap: () {
+               Navigator.push(
+                   context,
+                  MaterialPageRoute(
+                      builder: (_) => const TechnicianReviewsScreen(),
+    ),  
+  );
+}),          _profileItem(
               Icons.notifications_outlined, 'Notifications'),
           _profileItem(Icons.help_outline, 'Help & Support'),
           const SizedBox(height: 16),

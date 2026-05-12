@@ -9,7 +9,7 @@ import 'screens/register_screen.dart';
 import 'views/client/home_client.dart';
 import 'views/client/client_profile_screen.dart';
 import 'views/client/service_request_screen.dart';
-import 'views/client/my_bookings_page.dart';          // ← was my_bookings_screen.dart
+import 'views/client/my_bookings_page.dart';
 import 'views/client/booking_detail_screen.dart';
 import 'views/pro/home_pro.dart';
 import 'views/pro/complete_profile_screen.dart';
@@ -22,7 +22,7 @@ import 'providers/client_profile_provider.dart';
 import 'providers/technician_profile_provider.dart';
 import 'providers/service_request_provider.dart';
 import 'providers/booking_provider.dart';
-
+import 'providers/review_provider.dart';             // ← new
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +42,7 @@ class FixifyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TechnicianProfileProvider()),
         ChangeNotifierProvider(create: (_) => ServiceRequestProvider()),
         ChangeNotifierProvider(create: (_) => BookingProvider()),
+        ChangeNotifierProvider(create: (_) => ReviewProvider()),  // ← new
       ],
       child: MaterialApp(
         title: 'Fixify',
@@ -71,7 +72,7 @@ class FixifyApp extends StatelessWidget {
           '/client_profile':   (context) => const ClientProfileScreen(),
           '/complete_profile': (context) => const CompleteProfileScreen(),
           '/service_request':  (context) => const ServiceRequestScreen(),
-          '/my_bookings':      (context) => const MyBookingsPage(),  // ← was MyBookingsScreen
+          '/my_bookings':      (context) => const MyBookingsPage(),
           '/incoming_jobs':    (context) => const IncomingJobsScreen(),
           '/my_jobs':          (context) => const MyJobsScreen(),
         },
